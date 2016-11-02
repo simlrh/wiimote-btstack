@@ -186,11 +186,13 @@ void WiimoteBTStack::btstack_thread_function() {
 	btstack_memory_init();
 	btstack_run_loop_init(btstack_run_loop_posix_get_instance());
 
+#ifdef _DEBUG
 	char pklg_path[100];
 	strcpy(pklg_path, "hci_dump");
 	strcat(pklg_path, ".pklg");
 	printf("Packet Log: %s\n", pklg_path);
 	hci_dump_open(pklg_path, HCI_DUMP_PACKETLOGGER);
+#endif
 
 	// init HCI
 	hci_init(hci_transport_usb_instance(), NULL);

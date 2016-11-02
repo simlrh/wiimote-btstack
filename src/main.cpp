@@ -2,6 +2,7 @@
 #include "Pipes.hpp"
 #include "BTStack.hpp"
 #include "Windows.h"
+#include <conio.h>
 
 #include <vector>
 #include <memory>
@@ -15,8 +16,12 @@ int main(int argc, char** argv) {
 	while (!wiimotes->isReady()) {
 		Sleep(100);
 	}
-	wiimotes->discover();
 	while (1) {
+		if (_kbhit()) {
+			if (_getch() == 13) {
+				wiimotes->discover();
+			}
+		}
 		for (unsigned int i = 0; i < wiimotes->wiimotes.size(); i++) {
 			std::shared_ptr<Wiimote> wiimote = wiimotes->wiimotes[i];
 			if (i == wiimote_pipes.size()) {
@@ -25,24 +30,28 @@ int main(int argc, char** argv) {
 			do {
 				report = wiimote_pipes[i]->read();
 				if (report.size()) {
+#ifdef _DEBUG
 					printf("Sending to Wiimote %d: ", i);
 					for (auto byte : report)
 					{
 						printf("%x ", byte);
 					}
 					printf("\n");
+#endif
 					wiimote->write(report);
 				}
 			} while (report.size());
 			do {
 				report = wiimote->read();
 				if (report.size()) {
+#ifdef _DEBUG
 					printf("Received from Wiimote %d: ", i);
 					for (auto byte : report)
 					{
 						printf("%x ", byte);
 					}
 					printf("\n");
+#endif
 					wiimote_pipes[i]->write(report);
 				}
 			} while (report.size());

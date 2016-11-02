@@ -138,7 +138,7 @@ void Wiimote::l2cap_connect(uint8_t packet_type, uint16_t c, uint8_t *packet, ui
 {
 	commandQueue->addCommand(
 		[&](void) -> bool {
-			l2cap_create_channel(Wiimote::incoming_packet_handler, address.address, WIIMOTE_CONTROL_PSM, WIIMOTE_MTU, &channel);
+			l2cap_create_channel(Wiimote::incoming_packet_handler, address.address, WIIMOTE_DATA_PSM, WIIMOTE_MTU, &channel);
 			return true;
 		}
 	);
