@@ -7,9 +7,11 @@
 
 // Port related features
 #define HAVE_MALLOC
-//#define HAVE_POSIX_FILE_IO
-//#define HAVE_POSIX_STDIN
-//#define HAVE_POSIX_TIME
+#ifndef _WIN32
+#define HAVE_POSIX_FILE_IO
+#endif
+#define HAVE_POSIX_STDIN
+#define HAVE_POSIX_TIME
 
 // BTstack features that can be enabled
 #define ENABLE_BLE

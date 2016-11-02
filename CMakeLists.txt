@@ -1,21 +1,29 @@
-cmake_minimum_required(VERSION 2.8.12)
-project(BTStack)
+cmake_minimum_required(VERSION 3.0)
+project(WiimoteBTStack)
 
-list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR})
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 find_package(libusb-1.0 REQUIRED)
 
 set(BTSTACK_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/btstack")
 set(BTSTACK_SRC "${BTSTACK_ROOT}/src")
 
+set(SOURCES
+	src/main.cpp
+	src/btstack_config.h
+	src/wiimote_btstack.hpp
+	src/BTStack.hpp
+	src/BTStack.cpp
+	src/Wiimote.hpp
+	src/Wiimote.cpp
+	src/CommandQueue.hpp
+	src/CommandQueue.cpp
+	src/Pipes.hpp
+)
+
 set(
     BTSTACK_LIBRARIES
     "${LIBUSB_1_LIBRARY}"
 )
-
-if(WIN32)
-    list(APPEND BTSTACK_LIBRARIES ws2_32)
-	add_definitions(-Dinline=__inline -Dsnprintf=_snprintf)
-endif(WIN32)
 
 set(
 	BTSTACK_INCLUDE_DIRS
@@ -25,27 +33,40 @@ set(
     "${BTSTACK_ROOT}/3rd-party/mbedtls/include"
     "${BTSTACK_ROOT}/3rd-party/bluedroid/decoder/include"
     "${BTSTACK_ROOT}/3rd-party/bluedroid/encoder/include"
-	"${BTSTACK_ROOT}/platform/win"
 	"${BTSTACK_ROOT}/platform/posix"
-	"${BTSTACK_ROOT}/platform/embedded"
 )
 
-include_directories(
-	${BTSTACK_INCLUDE_DIRS}
-    ${CMAKE_CURRENT_SOURCE_DIR}
-    ${LIBUSB_1_INCLUDE_DIRS}
-)
-    
-add_library(
-    BTSTACK_CORE
-    OBJECT
-    "${BTSTACK_ROOT}/port/libusb/main.c"
-    "${BTSTACK_ROOT}/platform/posix/stdin_support.c"
+set(
+	BTSTACK_CORE_SOURCES
+	"${BTSTACK_ROOT}/platform/posix/stdin_support.c"
 	"${BTSTACK_SRC}/btstack_memory.c"
 	"${BTSTACK_SRC}/btstack_linked_list.c"
 	"${BTSTACK_SRC}/btstack_memory_pool.c"
 	"${BTSTACK_SRC}/btstack_run_loop.c"
 	"${BTSTACK_SRC}/btstack_util.c"
+)
+
+if(WIN32)
+	list(APPEND BTSTACK_INCLUDE_DIRS "${BTSTACK_ROOT}/platform/win")
+	list(APPEND BTSTACK_CORE_SOURCES "${BTSTACK_ROOT}/platform/win/sys/time.c")
+    list(APPEND BTSTACK_LIBRARIES ws2_32)
+
+	list(APPEND SOURCES src/WinPipes.cpp)
+
+	add_definitions(-Dsnprintf=_snprintf)
+endif(WIN32)
+
+include_directories(
+	${BTSTACK_INCLUDE_DIRS}
+    "${CMAKE_CURRENT_SOURCE_DIR}/src"
+    ${LIBUSB_1_INCLUDE_DIRS}
+)
+
+    
+add_library(
+    BTSTACK_CORE
+    OBJECT
+	${BTSTACK_CORE_SOURCES}
 )
 
 add_library(
@@ -62,7 +83,6 @@ add_library(
     "${BTSTACK_ROOT}/platform/posix/btstack_link_key_db_fs.c"
 )
 
-
 add_library(
     BTSTACK_CLASSIC
     OBJECT
@@ -74,13 +94,28 @@ add_library(
 	"${BTSTACK_SRC}/classic/sdp_server.c"
 )
 
-add_executable(
-    btstack_inquiry
-    wiimote_inquiry.c
-    "${BTSTACK_SRC}/ad_parser.c"
-    $<TARGET_OBJECTS:BTSTACK_CORE>
-    $<TARGET_OBJECTS:BTSTACK_COMMON>
-    $<TARGET_OBJECTS:BTSTACK_CLASSIC>
+target_compile_definitions(
+	BTSTACK_CORE
+	PRIVATE
+	"inline=__inline"
+)
+target_compile_definitions(
+	BTSTACK_COMMON
+	PRIVATE
+	"inline=__inline"
+)
+target_compile_definitions(
+	BTSTACK_CLASSIC
+	PRIVATE
+	"inline=__inline"
 )
 
-target_link_libraries(btstack_inquiry ${BTSTACK_LIBRARIES})
+add_executable(
+    wiimote_btstack
+	${SOURCES}
+    $<TARGET_OBJECTS:BTSTACK_CORE>
+    $<TARGET_OBJECTS:BTSTACK_COMMON>
+	$<TARGET_OBJECTS:BTSTACK_CLASSIC>
+)
+
+target_link_libraries(wiimote_btstack ${BTSTACK_LIBRARIES})
